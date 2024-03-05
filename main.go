@@ -26,6 +26,7 @@ func main() {
 	apiRouter := e.Group("/api/v1")
 
 	apiRouter.POST("/upload", controller.UploadFile)
+	apiRouter.GET("/download", controller.Download)
 
 	e.Logger.Fatal(e.Start(":8081"))
 }
