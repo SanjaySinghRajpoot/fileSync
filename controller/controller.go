@@ -4,13 +4,12 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/labstack/echo/v4"
 )
 
 func UploadFile(c echo.Context) error {
-
-	// I need to accept the payload and save it in a folder
 	// Source
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -23,7 +22,7 @@ func UploadFile(c echo.Context) error {
 	defer src.Close()
 
 	// Destination
-	dst, err := os.Create(file.Filename)
+	dst, err := os.Create(filepath.Join("static", filepath.Base(file.Filename)))
 	if err != nil {
 		return err
 	}
