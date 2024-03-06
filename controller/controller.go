@@ -1,9 +1,9 @@
 package controller
 
 import (
+	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -29,17 +29,14 @@ func UploadFile(c echo.Context) error {
 	}
 	defer src.Close()
 
-	// Destination
-	dst, err := os.Create(filepath.Join("static", filepath.Base(file.Filename)))
-	if err != nil {
+	buf := bytes.NewBuffer(nil)
+	if _, err := io.Copy(buf, src); err != nil {
 		return err
 	}
-	defer dst.Close()
 
-	// Copy
-	if _, err = io.Copy(dst, src); err != nil {
-		return err
-	}
+	databytes := make([]byte, 0)
+
+	databytes = append(databytes, buf.Bytes()...)
 
 	chunksPath := fmt.Sprintf("fileData/%s", file.Filename) // Directory to store chunks
 
@@ -50,15 +47,8 @@ func UploadFile(c echo.Context) error {
 		return err
 	}
 
-	// Read the file
-	data, err := ioutil.ReadFile(filepath.Join("static", filepath.Base(file.Filename)))
-	if err != nil {
-		fmt.Println("Error reading file:", err)
-		return err
-	}
-
 	// Process the file in chunks
-	_ = utils.SplitFile(file.Filename, data, chunksPath)
+	_ = utils.SplitFile(file.Filename, databytes, chunksPath)
 
 	return c.JSON(http.StatusCreated, "Files Uploaded sucessfully")
 }
@@ -105,5 +95,5 @@ func Download(c echo.Context) error {
 	// 	return err
 	// }
 
-	return c.JSON(http.StatusCreated, string(allContent))
+	return c.JSON(http.StatusOK, string(allContent))
 }
