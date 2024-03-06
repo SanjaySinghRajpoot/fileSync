@@ -7,6 +7,8 @@ import (
 	_ "github.com/lib/pq"
 )
 
+var DB *sql.DB
+
 func ConnectDB() (*sql.DB, error) {
 	// dsn := "host=localhost user=postgres password=postgres dbname=postgres sslmode=disable"
 	connStr := "postgres://postgres:postgres@localhost/filesync?sslmode=disable"
@@ -17,6 +19,8 @@ func ConnectDB() (*sql.DB, error) {
 	}
 
 	fmt.Println("Connected to Database")
+
+	DB = db
 
 	return db, nil
 }

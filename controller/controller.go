@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/SanjaySinghRajpoot/fileSync/config"
 	"github.com/SanjaySinghRajpoot/fileSync/utils"
 	"github.com/labstack/echo/v4"
 )
@@ -19,10 +20,19 @@ type DownloadPayload struct {
 
 func UploadFile(c echo.Context) error {
 	// Source
+
+	userId := c.FormValue("user_id")
+
+	if userId == "" {
+		log.Fatal("Please provide a user_id")
+		return nil
+	}
+
 	file, err := c.FormFile("file")
 	if err != nil {
 		return err
 	}
+
 	src, err := file.Open()
 	if err != nil {
 		return err
@@ -47,8 +57,35 @@ func UploadFile(c echo.Context) error {
 		return err
 	}
 
+	// we need to check the file version
+	// select * from record where user_id = ? and file_name = ?
+	rows, err := config.DB.Query("SELECT version FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC LIMIT 1", userId, file.Filename)
+	if err != nil {
+		fmt.Println("Error getting records:", err)
+		return err
+	}
+
+	var version int
+
+	// Check if there are any rows returned by the query
+	if rows.Next() {
+
+		// If a row is returned, scan the version
+		if err := rows.Scan(&version); err != nil {
+			fmt.Println("Error scanning row:", err)
+			return err
+		}
+		// Increment version
+		version++
+		fmt.Printf("Version found: %d\n", version)
+	} else {
+		// If no rows are returned, set version to 1
+		version = 1
+		fmt.Println("No previous version found, setting version to 1")
+	}
+
 	// Process the file in chunks
-	_ = utils.SplitFile(file.Filename, databytes, chunksPath)
+	_ = utils.SplitFile(file.Filename, databytes, chunksPath, userId, version)
 
 	return c.JSON(http.StatusCreated, "Files Uploaded sucessfully")
 }
