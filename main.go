@@ -3,12 +3,17 @@ package main
 import (
 	"net/http"
 
+	"github.com/SanjaySinghRajpoot/fileSync/config"
 	"github.com/SanjaySinghRajpoot/fileSync/controller"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 func main() {
+
+	// connect to DB
+	config.ConnectDB()
+
 	e := echo.New()
 
 	e.Use(middleware.Logger())
