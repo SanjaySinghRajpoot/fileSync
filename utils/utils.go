@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 
@@ -47,7 +46,6 @@ func SplitFile(fileName string, data []byte, chunksPath string, UserID string, v
 		chunks = append(chunks, chunkData{data: chunk, hash: hashedChunk})
 	}
 
-	//save the chunks hash
 	// Begin transaction
 	tx, err := config.DB.Begin()
 	if err != nil {
@@ -93,7 +91,7 @@ func JoinChunks(chunks []chunkData, outputFile string) error {
 		combinedData.Write(chunk.data)
 	}
 
-	return ioutil.WriteFile(outputFile, combinedData.Bytes(), os.ModePerm)
+	return os.WriteFile(outputFile, combinedData.Bytes(), os.ModePerm)
 }
 
 func min(a, b int) int {

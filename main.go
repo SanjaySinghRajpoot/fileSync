@@ -33,5 +33,7 @@ func main() {
 	apiRouter.POST("/upload", controller.UploadFile)
 	apiRouter.GET("/download", controller.Download)
 
+	// how to sync the files?
+
 	e.Logger.Fatal(e.Start(":8081"))
 }

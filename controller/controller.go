@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
@@ -16,6 +17,8 @@ import (
 
 type DownloadPayload struct {
 	FileName string `json:"file_name"`
+	Version  int    `json:"version"`
+	UserID   int    `json:"user_id"`
 }
 
 func UploadFile(c echo.Context) error {
@@ -96,40 +99,57 @@ func Download(c echo.Context) error {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
 
-	files, err := os.ReadDir(filepath.Join("fileData", filepath.Base(u.FileName)))
-	if err != nil {
-		log.Fatal(err)
+	var rows *sql.Rows
+	var err error
+
+	// 0 means the latest version
+	if u.Version == 0 {
+		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC", u.UserID, u.FileName)
+		if err != nil {
+			fmt.Println("Error getting records:", err)
+			return err
+		}
+	} else {
+		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 AND version=$3 ORDER BY created_at DESC", u.UserID, u.FileName, u.Version)
+
+		if err != nil {
+			fmt.Println("Error getting records:", err)
+			return err
+		}
+		defer rows.Close()
+	}
+
+	var fileNameArr []string
+
+	for rows.Next() {
+
+		var fileName string
+		err := rows.Scan(&fileName)
+
+		if err != nil {
+			fmt.Println("Error scanning file name:", err)
+			return err
+		}
+
+		fileNameArr = append(fileNameArr, fileName)
 	}
 
 	var allContent []byte
 
-	// Loop through each file
-	for _, file := range files {
-		// Check if it's a regular file
-		if !file.IsDir() {
-			// Print the name of the file
-			fmt.Println(file.Name())
+	for _, fileName := range fileNameArr {
 
-			folderPath := fmt.Sprintf("fileData/%s", u.FileName)
+		folderPath := fmt.Sprintf("fileData/%s", u.FileName)
 
-			filePath := filepath.Join(folderPath, file.Name())
-			content, err := os.ReadFile(filePath)
-			if err != nil {
-				log.Printf("Failed to read file %s: %s", filePath, err)
-				continue
-			}
-
-			// Append the content to the variable
-			allContent = append(allContent, content...)
+		filePath := filepath.Join(folderPath, fileName)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			log.Printf("Failed to read file %s: %s", filePath, err)
+			continue
 		}
-	}
 
-	// // Join the chunks back
-	// err = utils.JoinChunks(chunks, outputFile)
-	// if err != nil {
-	// 	fmt.Println("Error joining chunks:", err)
-	// 	return err
-	// }
+		// Append the content to the variable
+		allContent = append(allContent, content...)
+	}
 
 	return c.JSON(http.StatusOK, string(allContent))
 }
