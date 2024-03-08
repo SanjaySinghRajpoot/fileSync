@@ -3,6 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	_ "github.com/lib/pq"
@@ -39,6 +42,26 @@ func CRONjob() {
 		// we need to save this version in the local disk
 		var localVersion int
 
+		// Open the file
+		file, err := os.ReadFile("static/version.txt")
+		if err != nil {
+			fmt.Println("Error:", err)
+			return
+		}
+
+		// Convert the content to a string
+		fileContent := string(file)
+		// Split the content by "=" to get the version number
+		parts := strings.Split(fileContent, "=")
+		if len(parts) != 2 {
+			fmt.Println("Invalid format in the file")
+			return
+		}
+
+		fversion := strings.TrimSpace(parts[1])
+
+		localVersion, _ = strconv.Atoi(fversion)
+
 		rows, err := DB.Query("SELECT version FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC LIMIT 1", userid, fileName)
 		if err != nil {
 			fmt.Println("Error getting records:", err)
@@ -66,6 +89,13 @@ func CRONjob() {
 			defer rows.Close()
 
 			localVersion = version
+
+			chunk := fmt.Sprintf("version=%d", version)
+
+			err = os.WriteFile("static/version.txt", []byte(chunk), os.ModePerm)
+			if err != nil {
+				fmt.Printf("Error writing chunk: %v\n", err)
+			}
 
 			var fileNameArr []string
 
@@ -109,6 +139,13 @@ func CRONjob() {
 }
 
 func main() {
+
+	// Ensure chunks directory exists
+	err := os.MkdirAll("static", os.ModePerm)
+	if err != nil {
+		fmt.Println("Error creating chunks directory:", err)
+		return
+	}
 
 	ConnectDB()
 	CRONjob()
