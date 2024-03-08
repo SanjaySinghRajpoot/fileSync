@@ -89,7 +89,7 @@ func UploadFile(c echo.Context) error {
 	// Process the file in chunks
 	_ = utils.SplitFile(file.Filename, databytes, chunksPath, userId, version)
 
-	return c.JSON(http.StatusCreated, "Files Uploaded sucessfully")
+	return c.JSON(http.StatusCreated, "Files Uploaded successfully")
 }
 
 func Download(c echo.Context) error {
