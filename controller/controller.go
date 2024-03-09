@@ -104,11 +104,33 @@ func Download(c echo.Context) error {
 
 	// 0 means the latest version
 	if u.Version == 0 {
-		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC", u.UserID, u.FileName)
+
+		rows1, err := config.DB.Query("SELECT version FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC LIMIT 1", u.UserID, u.FileName)
 		if err != nil {
 			fmt.Println("Error getting records:", err)
 			return err
 		}
+
+		var version int
+
+		if rows1.Next() {
+
+			// If a row is returned, scan the version
+			if err := rows1.Scan(&version); err != nil {
+				fmt.Println("Error scanning row:", err)
+				return err
+			}
+		}
+
+		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 AND version=$3 ORDER BY created_at DESC", u.UserID, u.FileName, version)
+
+		if err != nil {
+			fmt.Println("Error getting records:", err)
+			return err
+		}
+		defer rows.Close()
+
+		fmt.Println("latest Version Returned")
 	} else {
 		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 AND version=$3 ORDER BY created_at DESC", u.UserID, u.FileName, u.Version)
 
