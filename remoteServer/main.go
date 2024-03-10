@@ -36,10 +36,10 @@ func CRONjob() {
 
 	cronJob.AddFunc("@every 1s", func() {
 
+		// Make a login system and get these values from it
 		userid := 1
 		fileName := "test6.txt"
 
-		// we need to save this version in the local disk
 		var localVersion int
 
 		// Open the file

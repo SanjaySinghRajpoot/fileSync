@@ -38,7 +38,7 @@ POST /api/v1/upload
 ### Download Endpoint
 
 ```
-POST /api/v1/download
+GET /api/v1/download
 ```
 
 **Request Body**
