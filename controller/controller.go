@@ -21,6 +21,11 @@ type DownloadPayload struct {
 	UserID   int    `json:"user_id"`
 }
 
+type VersionPayload struct {
+	FileName string `json:"file_name"`
+	UserID   int    `json:"user_id"`
+}
+
 func UploadFile(c echo.Context) error {
 	// Source
 
@@ -174,4 +179,35 @@ func Download(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusOK, string(allContent))
+}
+
+func GetVersion(c echo.Context) error {
+	// Source
+	u := new(VersionPayload)
+	if err := c.Bind(u); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+
+	var versions []int
+
+	rows1, err := config.DB.Query("SELECT version FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC", u.UserID, u.FileName)
+	if err != nil {
+		fmt.Println("Error getting records:", err)
+		return err
+	}
+
+	for rows1.Next() {
+
+		var version int
+		err := rows1.Scan(&version)
+
+		if err != nil {
+			fmt.Println("Error scanning file name:", err)
+			return err
+		}
+
+		versions = append(versions, version)
+	}
+
+	return c.JSON(http.StatusOK, versions)
 }

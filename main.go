@@ -32,6 +32,7 @@ func main() {
 
 	apiRouter.POST("/upload", controller.UploadFile)
 	apiRouter.GET("/download", controller.Download)
+	apiRouter.GET("/version", controller.GetVersion)
 
 	// how to sync the files?
 
