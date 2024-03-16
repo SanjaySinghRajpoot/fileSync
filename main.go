@@ -30,9 +30,13 @@ func main() {
 
 	apiRouter := e.Group("/api/v1")
 
-	apiRouter.POST("/upload", controller.UploadFile)
+	// This endpoint will be a part of the Block Service
+	// apiRouter.POST("/upload", controller.UploadFile)
+
 	apiRouter.GET("/download", controller.Download)
 	apiRouter.GET("/version", controller.GetVersion)
+
+	apiRouter.POST("/metadata", controller.Metadata)
 
 	// how to sync the files?
 
