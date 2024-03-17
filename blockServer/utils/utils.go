@@ -41,21 +41,24 @@ func ConnectDB() (*sql.DB, error) {
 	return db, nil
 }
 
-type RecordPayload struct {
-	UserID   int    `json:"user_id"`
-	Chunk    string `json:"chunk"`
-	FileName string `json:"filename"`
-	Version  int    `json:"version"`
+type Chunk struct {
+	Chunk string `json:"chunk"`
+	Order int    `json:"order"`
 }
 
-type RecordArr struct {
-	Records []RecordPayload `json:"records"`
+type RecordPayload struct {
+	UserID   int     `json:"user_id"`
+	FileName string  `json:"filename"`
+	Version  int     `json:"version"`
+	Chunks   []Chunk `json:"chunks"`
 }
 
 func SplitFile(fileName string, data []byte, chunksPath string, UserID string, version int) []chunkData {
 	var chunks []chunkData
 
-	var sendRecord []RecordPayload
+	intUserID, _ := strconv.Atoi(UserID)
+
+	var tempChunks []Chunk
 
 	for i := 0; i < len(data); i += chunkSize {
 
@@ -72,16 +75,19 @@ func SplitFile(fileName string, data []byte, chunksPath string, UserID string, v
 			continue // Skip to next chunk on error
 		}
 
-		intUserID, _ := strconv.Atoi(UserID)
-
-		sendRecord = append(sendRecord, RecordPayload{
-			UserID:   intUserID,
-			Chunk:    fmt.Sprintf("%d_%s", i/chunkSize+1, hashedChunk),
-			FileName: fileName,
-			Version:  version,
+		tempChunks = append(tempChunks, Chunk{
+			Chunk: hashedChunk,
+			Order: i/chunkSize + 1,
 		})
 
 		chunks = append(chunks, chunkData{data: chunk, hash: hashedChunk})
+	}
+
+	sendRecord := RecordPayload{
+		UserID:   intUserID,
+		FileName: fileName,
+		Version:  version,
+		Chunks:   tempChunks,
 	}
 
 	// now we will send these chunk address to the API server which will save them in the DB
@@ -98,17 +104,13 @@ func min(a, b int) int {
 	return b
 }
 
-func handleAPIServer(records []RecordPayload) {
+func handleAPIServer(records RecordPayload) {
 
 	fmt.Println("sending API request to API server")
 
 	url := "http://0.0.0.0:8081/api/v1/metadata"
 
-	sendRecord := RecordArr{
-		Records: records,
-	}
-
-	jsonStr, err := json.Marshal(&sendRecord)
+	jsonStr, err := json.Marshal(&records)
 	if err != nil {
 		fmt.Println("Error while Marshalling:", err)
 		return

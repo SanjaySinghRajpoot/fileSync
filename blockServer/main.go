@@ -98,7 +98,7 @@ func UploadFile(c echo.Context) error {
 	}
 
 	// check the file version
-	rows, err := utils.DB.Query("SELECT version FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC LIMIT 1", userId, file.Filename)
+	rows, err := utils.DB.Query("SELECT version FROM fileversion LEFT JOIN file ON file.id = fileversion.id WHERE file.user_id=$1 AND file.name=$2 ORDER BY version DESC LIMIT 1", userId, file.Filename)
 	if err != nil {
 		fmt.Println("Error getting records:", err)
 		return err

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/SanjaySinghRajpoot/fileSync/config"
 	"github.com/labstack/echo/v4"
@@ -22,15 +23,17 @@ type VersionPayload struct {
 	FileName string `json:"file_name"`
 	UserID   int    `json:"user_id"`
 }
-type Record struct {
-	UserID   int    `json:"user_id"`
-	Chunk    string `json:"chunk"`
-	FileName string `json:"filename"`
-	Version  int    `json:"version"`
+
+type Chunk struct {
+	Chunk string `json:"chunk"`
+	Order int    `json:"order"`
 }
 
 type RecordPayload struct {
-	Records []Record `json:"records"`
+	UserID   int     `json:"user_id"`
+	FileName string  `json:"filename"`
+	Version  int     `json:"version"`
+	Chunks   []Chunk `json:"chunks"`
 }
 
 // func UploadFile(c echo.Context) error {
@@ -225,6 +228,21 @@ func Metadata(c echo.Context) error {
 	if err := c.Bind(u); err != nil {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
+
+	// we need to insert the values in file and file Version table as well
+
+	_, err1 := config.DB.Query("INSERT INTO file (name, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4)", u.FileName, u.UserID, time.Now(), time.Now())
+	if err1 != nil {
+		fmt.Println("Error getting records1:", err1)
+		return err1
+	}
+
+	_, err2 := config.DB.Query("INSERT INTO fileversion (version) VALUES ($1)", u.Version)
+	if err2 != nil {
+		fmt.Println("Error getting records2:", err2)
+		return err2
+	}
+
 	// Begin transaction
 	tx, err := config.DB.Begin()
 	if err != nil {
@@ -232,17 +250,14 @@ func Metadata(c echo.Context) error {
 	}
 
 	// Prepare the bulk insert statement
-	stmt, err := tx.Prepare(`
-	 INSERT INTO Record (user_id, chunk, file_name, version)
-	 VALUES ($1, $2, $3, $4)
-    `)
+	stmt, err := tx.Prepare(`INSERT INTO block (sequence, hash) VALUES ($1, $2)`)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Bulk insert the records
-	for _, record := range u.Records {
-		_, err = stmt.Exec(record.UserID, record.Chunk, record.FileName, record.Version)
+	for _, record := range u.Chunks {
+		_, err = stmt.Exec(record.Order, record.Chunk)
 		if err != nil {
 			log.Fatal(err)
 		}
