@@ -1,4 +1,3 @@
--- Active: 1710562887801@@127.0.0.1@5432@filesync
 CREATE TABLE "file" (
   "id" SERIAL PRIMARY KEY,
   "name" varchar,
@@ -9,18 +8,14 @@ CREATE TABLE "file" (
 
 CREATE TABLE "fileversion" (
   "id" SERIAL PRIMARY KEY,
-  "file_id" integer,
+  "file_id" integer REFERENCES "file" ("id"),
   "version" integer,
   "updated_at" timestamp
 );
 
 CREATE TABLE "block" (
   "id" SERIAL PRIMARY KEY,
-  "file_version_id" integer,
+  "file_version_id" integer REFERENCES "fileversion" ("id"),
   "sequence" integer,
   "hash" VARCHAR
 );
-
-ALTER TABLE "fileversion" ADD FOREIGN KEY ("file_id") REFERENCES "file" ("id");
-
-ALTER TABLE "block" ADD FOREIGN KEY ("file_version_id") REFERENCES "fileversion" ("id");

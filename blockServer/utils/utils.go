@@ -69,7 +69,7 @@ func SplitFile(fileName string, data []byte, chunksPath string, UserID string, v
 		hashedChunk := hex.EncodeToString(hash[:])
 
 		// Write chunk to file
-		err := os.WriteFile(fmt.Sprintf("%s/%d_%s", chunksPath, i/chunkSize+1, hashedChunk), chunk, os.ModePerm)
+		err := os.WriteFile(fmt.Sprintf("%s/%s", chunksPath, hashedChunk), chunk, os.ModePerm)
 		if err != nil {
 			fmt.Printf("Error writing chunk %d: %v\n", i/chunkSize+1, err)
 			continue // Skip to next chunk on error

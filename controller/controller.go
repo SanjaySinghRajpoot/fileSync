@@ -230,14 +230,17 @@ func Metadata(c echo.Context) error {
 	}
 
 	// we need to insert the values in file and file Version table as well
+	var fileId int
 
-	_, err1 := config.DB.Query("INSERT INTO file (name, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4)", u.FileName, u.UserID, time.Now(), time.Now())
+	err1 := config.DB.QueryRow("INSERT INTO file (name, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id", u.FileName, u.UserID, time.Now(), time.Now()).Scan(&fileId)
 	if err1 != nil {
 		fmt.Println("Error getting records1:", err1)
 		return err1
 	}
 
-	_, err2 := config.DB.Query("INSERT INTO fileversion (version) VALUES ($1)", u.Version)
+	var fileVersionId int
+
+	err2 := config.DB.QueryRow("INSERT INTO fileversion (file_id, version, updated_at) VALUES ($1, $2, $3) RETURNING id", fileId, u.Version, time.Now()).Scan(&fileVersionId)
 	if err2 != nil {
 		fmt.Println("Error getting records2:", err2)
 		return err2
@@ -250,14 +253,14 @@ func Metadata(c echo.Context) error {
 	}
 
 	// Prepare the bulk insert statement
-	stmt, err := tx.Prepare(`INSERT INTO block (sequence, hash) VALUES ($1, $2)`)
+	stmt, err := tx.Prepare(`INSERT INTO block (sequence, hash, file_version_id) VALUES ($1, $2, $3)`)
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	// Bulk insert the records
 	for _, record := range u.Chunks {
-		_, err = stmt.Exec(record.Order, record.Chunk)
+		_, err = stmt.Exec(record.Order, record.Chunk, fileVersionId)
 		if err != nil {
 			log.Fatal(err)
 		}
