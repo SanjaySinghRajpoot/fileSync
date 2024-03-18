@@ -3,11 +3,13 @@ package main
 import (
 	"blockServer/utils"
 	"bytes"
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -48,11 +50,109 @@ func main() {
 
 	// This endpoint will be a part of the Block Service
 	apiRouter.POST("/upload", UploadFile)
+	apiRouter.GET("/download", Download)
 
 	e.Logger.Fatal(e.Start(":8082"))
 
 }
 
+func Download(c echo.Context) error {
+	// Source
+	u := new(DownloadPayload)
+	if err := c.Bind(u); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+
+	var rows *sql.Rows
+	var err error
+
+	// 0 means the latest version
+	if u.Version == 0 {
+
+		rows1, err := utils.DB.Query("SELECT version FROM fileversion LEFT JOIN file ON file.id = fileversion.file_id WHERE file.user_id=$1 AND file.name=$2 ORDER BY version DESC LIMIT 1", u.UserID, u.FileName)
+		if err != nil {
+			fmt.Println("Error getting records:", err)
+			return err
+		}
+
+		var version int
+
+		if rows1.Next() {
+
+			// If a row is returned, scan the version
+			if err := rows1.Scan(&version); err != nil {
+				fmt.Println("Error scanning row:", err)
+				return err
+			}
+		}
+
+		rows, err = utils.DB.Query("SELECT hash FROM block FULL JOIN fileversion ON fileversion.id = block.file_version_id FULL JOIN file on file.id = fileversion.file_id WHERE fileversion.version=$1 AND file.user_id=$2 AND file.name=$3 ORDER BY sequence ASC LIMIT 100", version, u.UserID, u.FileName)
+
+		if err != nil {
+			fmt.Println("Error getting records:", err)
+			return err
+		}
+		defer rows.Close()
+
+		fmt.Println(rows)
+
+		fmt.Println("latest Version Returned")
+	} else {
+		rows, err = utils.DB.Query("SELECT hash FROM block FULL JOIN fileversion ON fileversion.id = block.file_version_id FULL JOIN file on file.id = fileversion.file_id WHERE fileversion.version=$1 AND file.user_id=$2 AND file.name=$3 ORDER BY sequence ASC LIMIT 100", u.Version, u.UserID, u.FileName)
+
+		fmt.Println(rows)
+
+		if err != nil {
+			fmt.Println("Error getting records:", err)
+			return err
+		}
+		defer rows.Close()
+	}
+
+	var fileNameArr []string
+
+	fmt.Println("latest Version Returned1")
+
+	for rows.Next() {
+
+		fmt.Println("latest Version Returned1")
+
+		var fileName string
+		err := rows.Scan(&fileName)
+
+		if err != nil {
+			fmt.Println("Error scanning file name:", err)
+			return err
+		}
+
+		fileNameArr = append(fileNameArr, fileName)
+	}
+
+	var allContent []byte
+
+	fmt.Println("latest Version Returned2")
+
+	for _, fileName := range fileNameArr {
+
+		fmt.Println(u.FileName)
+
+		folderPath := fmt.Sprintf("fileData/%s", u.FileName)
+
+		filePath := filepath.Join(folderPath, fileName)
+		content, err := os.ReadFile(filePath)
+		if err != nil {
+			log.Printf("Failed to read file %s: %s", filePath, err)
+			continue
+		}
+
+		// Append the content to the variable
+		allContent = append(allContent, content...)
+	}
+
+	fmt.Println("latest Version Returned3")
+
+	return c.JSON(http.StatusOK, string(allContent))
+}
 func UploadFile(c echo.Context) error {
 	// Source
 
@@ -98,7 +198,7 @@ func UploadFile(c echo.Context) error {
 	}
 
 	// check the file version
-	rows, err := utils.DB.Query("SELECT version FROM fileversion LEFT JOIN file ON file.id = fileversion.id WHERE file.user_id=$1 AND file.name=$2 ORDER BY version DESC LIMIT 1", userId, file.Filename)
+	rows, err := utils.DB.Query("SELECT version FROM fileversion LEFT JOIN file ON file.id = fileversion.file_id WHERE file.user_id=$1 AND file.name=$2 ORDER BY version DESC LIMIT 1", userId, file.Filename)
 	if err != nil {
 		fmt.Println("Error getting records:", err)
 		return err
