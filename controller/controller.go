@@ -1,12 +1,9 @@
 package controller
 
 import (
-	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"path/filepath"
 	"time"
 
 	"github.com/SanjaySinghRajpoot/fileSync/config"
@@ -107,89 +104,89 @@ type RecordPayload struct {
 // 	return c.JSON(http.StatusCreated, "Files Uploaded successfully")
 // }
 
-func Download(c echo.Context) error {
-	// Source
-	u := new(DownloadPayload)
-	if err := c.Bind(u); err != nil {
-		return c.String(http.StatusBadRequest, "bad request")
-	}
+// func Download(c echo.Context) error {
+// 	// Source
+// 	u := new(DownloadPayload)
+// 	if err := c.Bind(u); err != nil {
+// 		return c.String(http.StatusBadRequest, "bad request")
+// 	}
 
-	var rows *sql.Rows
-	var err error
+// 	var rows *sql.Rows
+// 	var err error
 
-	// 0 means the latest version
-	if u.Version == 0 {
+// 	// 0 means the latest version
+// 	if u.Version == 0 {
 
-		rows1, err := config.DB.Query("SELECT version FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC LIMIT 1", u.UserID, u.FileName)
-		if err != nil {
-			fmt.Println("Error getting records:", err)
-			return err
-		}
+// 		rows1, err := config.DB.Query("SELECT version FROM record WHERE user_id=$1 AND file_name=$2 ORDER BY version DESC LIMIT 1", u.UserID, u.FileName)
+// 		if err != nil {
+// 			fmt.Println("Error getting records:", err)
+// 			return err
+// 		}
 
-		var version int
+// 		var version int
 
-		if rows1.Next() {
+// 		if rows1.Next() {
 
-			// If a row is returned, scan the version
-			if err := rows1.Scan(&version); err != nil {
-				fmt.Println("Error scanning row:", err)
-				return err
-			}
-		}
+// 			// If a row is returned, scan the version
+// 			if err := rows1.Scan(&version); err != nil {
+// 				fmt.Println("Error scanning row:", err)
+// 				return err
+// 			}
+// 		}
 
-		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 AND version=$3 ORDER BY created_at DESC", u.UserID, u.FileName, version)
+// 		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 AND version=$3 ORDER BY created_at DESC", u.UserID, u.FileName, version)
 
-		if err != nil {
-			fmt.Println("Error getting records:", err)
-			return err
-		}
-		defer rows.Close()
+// 		if err != nil {
+// 			fmt.Println("Error getting records:", err)
+// 			return err
+// 		}
+// 		defer rows.Close()
 
-		fmt.Println("latest Version Returned")
-	} else {
-		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 AND version=$3 ORDER BY created_at DESC", u.UserID, u.FileName, u.Version)
+// 		fmt.Println("latest Version Returned")
+// 	} else {
+// 		rows, err = config.DB.Query("SELECT chunk FROM record WHERE user_id=$1 AND file_name=$2 AND version=$3 ORDER BY created_at DESC", u.UserID, u.FileName, u.Version)
 
-		if err != nil {
-			fmt.Println("Error getting records:", err)
-			return err
-		}
-		defer rows.Close()
-	}
+// 		if err != nil {
+// 			fmt.Println("Error getting records:", err)
+// 			return err
+// 		}
+// 		defer rows.Close()
+// 	}
 
-	var fileNameArr []string
+// 	var fileNameArr []string
 
-	for rows.Next() {
+// 	for rows.Next() {
 
-		var fileName string
-		err := rows.Scan(&fileName)
+// 		var fileName string
+// 		err := rows.Scan(&fileName)
 
-		if err != nil {
-			fmt.Println("Error scanning file name:", err)
-			return err
-		}
+// 		if err != nil {
+// 			fmt.Println("Error scanning file name:", err)
+// 			return err
+// 		}
 
-		fileNameArr = append(fileNameArr, fileName)
-	}
+// 		fileNameArr = append(fileNameArr, fileName)
+// 	}
 
-	var allContent []byte
+// 	var allContent []byte
 
-	for _, fileName := range fileNameArr {
+// 	for _, fileName := range fileNameArr {
 
-		folderPath := fmt.Sprintf("fileData/%s", u.FileName)
+// 		folderPath := fmt.Sprintf("fileData/%s", u.FileName)
 
-		filePath := filepath.Join(folderPath, fileName)
-		content, err := os.ReadFile(filePath)
-		if err != nil {
-			log.Printf("Failed to read file %s: %s", filePath, err)
-			continue
-		}
+// 		filePath := filepath.Join(folderPath, fileName)
+// 		content, err := os.ReadFile(filePath)
+// 		if err != nil {
+// 			log.Printf("Failed to read file %s: %s", filePath, err)
+// 			continue
+// 		}
 
-		// Append the content to the variable
-		allContent = append(allContent, content...)
-	}
+// 		// Append the content to the variable
+// 		allContent = append(allContent, content...)
+// 	}
 
-	return c.JSON(http.StatusOK, string(allContent))
-}
+// 	return c.JSON(http.StatusOK, string(allContent))
+// }
 
 func GetVersion(c echo.Context) error {
 	// Source

@@ -32,8 +32,8 @@ func main() {
 
 	// This endpoint will be a part of the Block Service
 	// apiRouter.POST("/upload", controller.UploadFile)
+	// apiRouter.GET("/download", controller.Download)
 
-	apiRouter.GET("/download", controller.Download)
 	apiRouter.GET("/version", controller.GetVersion)
 
 	apiRouter.POST("/metadata", controller.Metadata)
