@@ -15,8 +15,8 @@ func main() {
 	// connect to DB
 	config.ConnectDB()
 
-	//set up consumer
-	utils.Consumer()
+	//set up consumer - running it in a parallel go routine
+	go utils.Consumer()
 
 	e := echo.New()
 
