@@ -32,7 +32,7 @@ func Consumer() {
 	defer consumer.Close()
 
 	// Subscribe to a topics
-	topics := []string{"newsfeed"}
+	topics := []string{"metadata"}
 	consumer.SubscribeTopics(topics, nil)
 
 	// Handle messages and shutdown signals
