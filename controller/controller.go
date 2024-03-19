@@ -2,36 +2,13 @@ package controller
 
 import (
 	"fmt"
-	"log"
 	"net/http"
-	"time"
 
 	"github.com/SanjaySinghRajpoot/fileSync/config"
+	"github.com/SanjaySinghRajpoot/fileSync/models"
+	"github.com/SanjaySinghRajpoot/fileSync/utils"
 	"github.com/labstack/echo/v4"
 )
-
-type DownloadPayload struct {
-	FileName string `json:"file_name"`
-	Version  int    `json:"version"`
-	UserID   int    `json:"user_id"`
-}
-
-type VersionPayload struct {
-	FileName string `json:"file_name"`
-	UserID   int    `json:"user_id"`
-}
-
-type Chunk struct {
-	Chunk string `json:"chunk"`
-	Order int    `json:"order"`
-}
-
-type RecordPayload struct {
-	UserID   int     `json:"user_id"`
-	FileName string  `json:"filename"`
-	Version  int     `json:"version"`
-	Chunks   []Chunk `json:"chunks"`
-}
 
 // func UploadFile(c echo.Context) error {
 // 	// Source
@@ -190,7 +167,7 @@ type RecordPayload struct {
 
 func GetVersion(c echo.Context) error {
 	// Source
-	u := new(VersionPayload)
+	u := new(models.VersionPayload)
 	if err := c.Bind(u); err != nil {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
@@ -221,52 +198,15 @@ func GetVersion(c echo.Context) error {
 
 func Metadata(c echo.Context) error {
 
-	u := new(RecordPayload)
+	u := new(models.RecordPayload)
 	if err := c.Bind(u); err != nil {
 		return c.String(http.StatusBadRequest, "bad request")
 	}
 
-	// we need to insert the values in file and file Version table as well
-	var fileId int
+	err := utils.SaveMetadata(*u)
 
-	err1 := config.DB.QueryRow("INSERT INTO file (name, user_id, created_at, updated_at) VALUES ($1, $2, $3, $4) RETURNING id", u.FileName, u.UserID, time.Now(), time.Now()).Scan(&fileId)
-	if err1 != nil {
-		fmt.Println("Error getting records1:", err1)
-		return err1
-	}
-
-	var fileVersionId int
-
-	err2 := config.DB.QueryRow("INSERT INTO fileversion (file_id, version, updated_at) VALUES ($1, $2, $3) RETURNING id", fileId, u.Version, time.Now()).Scan(&fileVersionId)
-	if err2 != nil {
-		fmt.Println("Error getting records2:", err2)
-		return err2
-	}
-
-	// Begin transaction
-	tx, err := config.DB.Begin()
 	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Prepare the bulk insert statement
-	stmt, err := tx.Prepare(`INSERT INTO block (sequence, hash, file_version_id) VALUES ($1, $2, $3)`)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// Bulk insert the records
-	for _, record := range u.Chunks {
-		_, err = stmt.Exec(record.Order, record.Chunk, fileVersionId)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
-
-	// Commit the transaction
-	err = tx.Commit()
-	if err != nil {
-		log.Fatal(err)
+		return err
 	}
 
 	return nil

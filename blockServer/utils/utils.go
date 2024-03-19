@@ -1,13 +1,10 @@
 package utils
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 
@@ -19,6 +16,18 @@ const chunkSize = 1024 // Adjust chunk size as needed
 type chunkData struct {
 	data []byte
 	hash string
+}
+
+type Chunk struct {
+	Chunk string `json:"chunk"`
+	Order int    `json:"order"`
+}
+
+type RecordPayload struct {
+	UserID   int     `json:"user_id"`
+	FileName string  `json:"filename"`
+	Version  int     `json:"version"`
+	Chunks   []Chunk `json:"chunks"`
 }
 
 var DB *sql.DB
@@ -39,18 +48,6 @@ func ConnectDB() (*sql.DB, error) {
 	DB = db
 
 	return db, nil
-}
-
-type Chunk struct {
-	Chunk string `json:"chunk"`
-	Order int    `json:"order"`
-}
-
-type RecordPayload struct {
-	UserID   int     `json:"user_id"`
-	FileName string  `json:"filename"`
-	Version  int     `json:"version"`
-	Chunks   []Chunk `json:"chunks"`
 }
 
 func SplitFile(fileName string, data []byte, chunksPath string, UserID string, version int) []chunkData {
@@ -90,9 +87,17 @@ func SplitFile(fileName string, data []byte, chunksPath string, UserID string, v
 		Chunks:   tempChunks,
 	}
 
+	// send record with kafka
+	msg, err := SendMetadata("metadata", sendRecord, KafkaProducer)
+	if err != nil {
+		fmt.Println(msg)
+		fmt.Println(err)
+		return nil
+	}
+
 	// now we will send these chunk address to the API server which will save them in the DB
-	fmt.Println("sending API request to API server")
-	handleAPIServer(sendRecord)
+	// fmt.Println("sending API request to API server")
+	// handleAPIServer(sendRecord)
 
 	return chunks
 }
@@ -104,30 +109,30 @@ func min(a, b int) int {
 	return b
 }
 
-func handleAPIServer(records RecordPayload) {
+// func handleAPIServer(records RecordPayload) {
 
-	fmt.Println("sending API request to API server")
+// 	fmt.Println("sending API request to API server")
 
-	url := "http://0.0.0.0:8081/api/v1/metadata"
+// 	url := "http://0.0.0.0:8081/api/v1/metadata"
 
-	jsonStr, err := json.Marshal(&records)
-	if err != nil {
-		fmt.Println("Error while Marshalling:", err)
-		return
-	}
+// 	jsonStr, err := json.Marshal(&records)
+// 	if err != nil {
+// 		fmt.Println("Error while Marshalling:", err)
+// 		return
+// 	}
 
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
-	req.Header.Set("Content-Type", "application/json")
+// 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonStr))
+// 	req.Header.Set("Content-Type", "application/json")
 
-	if err != nil {
-		panic(err)
-	}
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	defer resp.Body.Close()
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
+// 	if err != nil {
+// 		panic(err)
+// 	}
+// 	defer resp.Body.Close()
 
-}
+// }

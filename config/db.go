@@ -3,7 +3,6 @@ package config
 import (
 	"database/sql"
 	"fmt"
-	"os"
 
 	_ "github.com/lib/pq"
 )
@@ -12,8 +11,8 @@ var DB *sql.DB
 
 func ConnectDB() (*sql.DB, error) {
 	// dsn := "host=localhost user=postgres password=postgres dbname=postgres sslmode=disable"
-	// connStr := "postgres://postgres:postgres@localhost/filesync?sslmode=disable"
-	connStr := os.Getenv("DATABASE_URL")
+	connStr := "postgres://postgres:postgres@localhost/filesync?sslmode=disable"
+	// connStr := os.Getenv("DATABASE_URL")
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		fmt.Println(err)

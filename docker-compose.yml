@@ -11,16 +11,63 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=filesync
-  filesync:
-    container_name: filesync
-    build:
-      context: .
-      dockerfile: Dockerfile
-    environment:
-      DATABASE_URL: "postgres://postgres:postgres@filesync-db/filesync?sslmode=disable"
+  # filesync:
+  #   container_name: filesync
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile
+  #   environment:
+  #     DATABASE_URL: "postgres://postgres:postgres@filesync-db/filesync?sslmode=disable"
+  #   ports:
+  #     - "8081:8081"
+  #   volumes:
+  #     - ./:/app
+  #   depends_on:
+  #     - db
+  #     - zooFileSync
+  #     - kafkaFileSync
+  zooFileSync:
+    image: confluentinc/cp-zookeeper:7.3.2
+    hostname: zooFileSync
+    container_name: zooFileSync
     ports:
-      - "8081:8081"
-    volumes:
-      - ./:/app
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_SERVER_ID: 1
+      ZOOKEEPER_SERVERS: zooFileSync:2888:3888
+  kafkaFileSync:
+    image: confluentinc/cp-kafka:7.3.2
+    hostname: kafkaFileSync
+    container_name: kafkaFileSync
+    ports:
+      - "9092:9092"
+      - "29092:29092"
+      - "9999:9999"
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafkaFileSync:19092,EXTERNAL://${DOCKER_HOST_IP:-127.0.0.1}:9092,DOCKER://host.docker.internal:29092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT,DOCKER:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_ZOOKEEPER_CONNECT: "zooFileSync:2181"
+      KAFKA_BROKER_ID: 1
+      KAFKA_LOG4J_LOGGERS: "kafka.controller=INFO,kafka.producer.async.DefaultEventHandler=INFO,state.change.logger=INFO"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_JMX_PORT: 9999
+      KAFKA_JMX_HOSTNAME: ${DOCKER_HOST_IP:-127.0.0.1}
+      KAFKA_AUTHORIZER_CLASS_NAME: kafka.security.authorizer.AclAuthorizer
+      KAFKA_ALLOW_EVERYONE_IF_NO_ACL_FOUND: "true"
     depends_on:
-      - db
+      - zooFileSync
+volumes:
+  database_dockerizing:
+  api_volume:
+  cache:
+    driver: local
+  main-app:
+    driver: local
+
+networks:
+  fullstack:
+    driver: bridge
