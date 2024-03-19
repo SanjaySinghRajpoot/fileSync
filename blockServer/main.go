@@ -32,6 +32,15 @@ func main() {
 
 	utils.ConnectDB()
 
+	// Kafka Producer
+	var err error
+	utils.KafkaProducer, err = utils.InitializeProducer()
+
+	if err != nil {
+		fmt.Printf("Failed to create producer: %s\n", err.Error())
+		return
+	}
+
 	e := echo.New()
 
 	e.Use(middleware.Logger())

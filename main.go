@@ -5,6 +5,7 @@ import (
 
 	"github.com/SanjaySinghRajpoot/fileSync/config"
 	"github.com/SanjaySinghRajpoot/fileSync/controller"
+	"github.com/SanjaySinghRajpoot/fileSync/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
@@ -13,6 +14,9 @@ func main() {
 
 	// connect to DB
 	config.ConnectDB()
+
+	//set up consumer
+	utils.Consumer()
 
 	e := echo.New()
 

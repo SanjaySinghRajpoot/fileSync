@@ -90,6 +90,16 @@ func SplitFile(fileName string, data []byte, chunksPath string, UserID string, v
 		Chunks:   tempChunks,
 	}
 
+	fmt.Println("-------------------------------------------------------")
+
+	// send record with kafka
+	msg, err := SendMetadata("metadata", sendRecord, KafkaProducer)
+	if err != nil {
+		fmt.Println(msg)
+		fmt.Println(err)
+		return nil
+	}
+
 	// now we will send these chunk address to the API server which will save them in the DB
 	fmt.Println("sending API request to API server")
 	handleAPIServer(sendRecord)
