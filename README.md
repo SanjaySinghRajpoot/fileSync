@@ -2,6 +2,12 @@
 
 FileSync is a robust file synchronization system designed to facilitate seamless upload and download operations between a client and a remote server. It offers features such as file versioning, chunking for efficient data transfer, and hash checking for file integrity verification. With FileSync, users can easily manage their files across multiple devices while ensuring data consistency and reliability.
 
+## System Design 
+![Screenshot from 2024-03-20 10-51-22](https://github.com/SanjaySinghRajpoot/fileSync/assets/67458417/c7c67dd9-5e7f-4440-82ad-8d74b1cda87d)
+
+
+
+
 ## Features
 
 1. **Remote File Sync**: Sync files between a main server and a remote server, ensuring that changes made on one server reflect on the other for a given `user_id` and file name.
