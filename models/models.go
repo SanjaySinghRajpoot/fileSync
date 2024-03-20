@@ -22,3 +22,10 @@ type RecordPayload struct {
 	Version  int     `json:"version"`
 	Chunks   []Chunk `json:"chunks"`
 }
+
+type CheckHashPayload struct {
+	UserID   int      `json:"user_id"`
+	FileName string   `json:"filename"`
+	Version  int      `json:"version"`
+	Hash     []string `json:"hash"`
+}

@@ -109,8 +109,6 @@ func Download(c echo.Context) error {
 	} else {
 		rows, err = utils.DB.Query("SELECT hash FROM block FULL JOIN fileversion ON fileversion.id = block.file_version_id FULL JOIN file on file.id = fileversion.file_id WHERE fileversion.version=$1 AND file.user_id=$2 AND file.name=$3 ORDER BY sequence ASC LIMIT 100", u.Version, u.UserID, u.FileName)
 
-		fmt.Println(rows)
-
 		if err != nil {
 			fmt.Println("Error getting records:", err)
 			return err
@@ -120,14 +118,12 @@ func Download(c echo.Context) error {
 
 	var fileNameArr []string
 
-	fmt.Println("latest Version Returned1")
-
 	for rows.Next() {
-
-		fmt.Println("latest Version Returned1")
 
 		var fileName string
 		err := rows.Scan(&fileName)
+
+		fmt.Println(fileName)
 
 		if err != nil {
 			fmt.Println("Error scanning file name:", err)
@@ -139,11 +135,7 @@ func Download(c echo.Context) error {
 
 	var allContent []byte
 
-	fmt.Println("latest Version Returned2")
-
 	for _, fileName := range fileNameArr {
-
-		fmt.Println(u.FileName)
 
 		folderPath := fmt.Sprintf("fileData/%s", u.FileName)
 
@@ -157,8 +149,6 @@ func Download(c echo.Context) error {
 		// Append the content to the variable
 		allContent = append(allContent, content...)
 	}
-
-	fmt.Println("latest Version Returned3")
 
 	return c.JSON(http.StatusOK, string(allContent))
 }

@@ -211,3 +211,56 @@ func Metadata(c echo.Context) error {
 
 	return nil
 }
+
+func CheckHash(c echo.Context) error {
+
+	u := new(models.CheckHashPayload)
+	if err := c.Bind(u); err != nil {
+		return c.String(http.StatusBadRequest, "bad request")
+	}
+
+	rows, err := config.DB.Query("SELECT hash FROM block FULL JOIN fileversion ON fileversion.id = block.file_version_id FULL JOIN file on file.id = fileversion.file_id WHERE fileversion.version=$1 AND file.user_id=$2 AND file.name=$3 ORDER BY sequence ASC LIMIT 100", u.Version, u.UserID, u.FileName)
+
+	if err != nil {
+		fmt.Println("Error getting records:", err)
+		return err
+	}
+	defer rows.Close()
+
+	var hashes []string
+
+	for rows.Next() {
+
+		var hash string
+		err := rows.Scan(&hash)
+
+		fmt.Println(hash)
+
+		if err != nil {
+			fmt.Println("Error scanning file name:", err)
+			return err
+		}
+
+		hashes = append(hashes, hash)
+	}
+
+	// now check which of the hash is not present in the DB
+	var notPresentHashs []string
+
+	for _, givenHash := range u.Hash {
+		checkHash := false
+
+		for _, hash := range hashes {
+
+			if givenHash == hash {
+				checkHash = true
+			}
+		}
+
+		if !checkHash {
+			notPresentHashs = append(notPresentHashs, givenHash)
+		}
+	}
+
+	return c.JSON(http.StatusOK, notPresentHashs)
+}

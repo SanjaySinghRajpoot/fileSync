@@ -39,7 +39,7 @@ func main() {
 	// apiRouter.GET("/download", controller.Download)
 
 	apiRouter.GET("/version", controller.GetVersion)
-
+	apiRouter.POST("/hash", controller.CheckHash)
 	apiRouter.POST("/metadata", controller.Metadata)
 
 	// how to sync the files?
